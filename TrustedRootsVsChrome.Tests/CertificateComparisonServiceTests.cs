@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using TrustedRootsVsChrome.Web.Models;
 using TrustedRootsVsChrome.Web.Services;
+using Xunit;
 
 namespace TrustedRootsVsChrome.Tests;
 
@@ -17,13 +18,13 @@ public sealed class CertificateComparisonServiceTests : IDisposable
     [Fact]
     public async Task ExcludesMicrosoftRootsFromDifferences()
     {
-    var microsoftRoot = Track(CreateCertificate("CN=Microsoft Test Root"));
+        var microsoftRoot = Track(CreateCertificate("CN=Microsoft Test Root"));
         var chromeRoots = new[] { microsoftRoot };
-        var windowsRoots = new[] { microsoftRoot };
+        var windowsRoots = new[] { CreateWindowsRoot(microsoftRoot, "Local Machine / Trusted Root") };
 
         var service = CreateService(chromeRoots, windowsRoots);
 
-        var result = await service.GetDifferencesAsync(CancellationToken.None);
+        var result = await service.GetDifferencesAsync(excludeMicrosoftTrustAnchors: true, CancellationToken.None);
 
         Assert.Empty(result.MissingInChrome);
     }
@@ -31,23 +32,58 @@ public sealed class CertificateComparisonServiceTests : IDisposable
     [Fact]
     public async Task ReturnsWindowsOnlyCertificates()
     {
-    var sharedCert = Track(CreateCertificate("CN=Shared"));
-    var windowsUnique = Track(CreateCertificate("CN=Unique"));
+        var sharedCert = Track(CreateCertificate("CN=Shared"));
+        var windowsUnique = Track(CreateCertificate("CN=Unique"));
 
         var chromeRoots = new[] { sharedCert };
-        var windowsRoots = new[] { sharedCert, windowsUnique };
+        var windowsRoots = new[]
+        {
+            CreateWindowsRoot(sharedCert, "Local Machine / Trusted Root"),
+            CreateWindowsRoot(windowsUnique, "Local Machine / Trusted Root")
+        };
 
         var service = CreateService(chromeRoots, windowsRoots);
 
-        CertificateComparisonResult result = await service.GetDifferencesAsync(CancellationToken.None);
+        CertificateComparisonResult result = await service.GetDifferencesAsync(excludeMicrosoftTrustAnchors: true, CancellationToken.None);
 
         Assert.Single(result.MissingInChrome);
         Assert.Equal("CN=Unique", result.MissingInChrome[0].Subject);
     }
 
+    [Fact]
+    public async Task IncludesMicrosoftRootsWhenToggleDisabled()
+    {
+        var microsoftRoot = Track(CreateCertificate("CN=Microsoft Test Root"));
+        var chromeRoots = Array.Empty<X509Certificate2>();
+        var windowsRoots = new[] { CreateWindowsRoot(microsoftRoot, "Local Machine / Trusted Root") };
+
+        var service = CreateService(chromeRoots, windowsRoots);
+
+        CertificateComparisonResult result = await service.GetDifferencesAsync(excludeMicrosoftTrustAnchors: false, CancellationToken.None);
+
+        Assert.Single(result.MissingInChrome);
+        Assert.Equal("CN=Microsoft Test Root", result.MissingInChrome[0].Subject);
+    }
+
+    [Fact]
+    public async Task RecordsSourceMetadataOnCertificate()
+    {
+        var unique = Track(CreateCertificate("CN=Unique"));
+        var chromeRoots = Array.Empty<X509Certificate2>();
+        var windowsRoots = new[] { CreateWindowsRoot(unique, "Current User / Trusted Root", "Local Machine / Third-Party Root") };
+
+        var service = CreateService(chromeRoots, windowsRoots);
+
+        CertificateComparisonResult result = await service.GetDifferencesAsync(excludeMicrosoftTrustAnchors: true, CancellationToken.None);
+
+        var record = Assert.Single(result.MissingInChrome);
+        Assert.Contains("Current User / Trusted Root", record.Sources);
+        Assert.Contains("Local Machine / Third-Party Root", record.Sources);
+    }
+
     private CertificateComparisonService CreateService(
         IReadOnlyCollection<X509Certificate2> chromeRoots,
-        IReadOnlyCollection<X509Certificate2> windowsRoots)
+        IReadOnlyCollection<WindowsTrustedRoot> windowsRoots)
     {
         var chromeProvider = new StubChromeProvider(chromeRoots);
         var windowsProvider = new StubWindowsProvider(windowsRoots);
@@ -57,6 +93,9 @@ public sealed class CertificateComparisonServiceTests : IDisposable
             windowsProvider,
             NullLogger<CertificateComparisonService>.Instance);
     }
+
+    private WindowsTrustedRoot CreateWindowsRoot(X509Certificate2 certificate, params string[] sources)
+        => new(certificate, sources);
 
     private X509Certificate2 CreateCertificate(string subjectName)
     {
@@ -103,11 +142,11 @@ public sealed class CertificateComparisonServiceTests : IDisposable
 
     private sealed class StubWindowsProvider : IWindowsTrustedRootProvider
     {
-        private readonly IReadOnlyCollection<X509Certificate2> _certificates;
+        private readonly IReadOnlyCollection<WindowsTrustedRoot> _certificates;
 
-        public StubWindowsProvider(IReadOnlyCollection<X509Certificate2> certificates)
+        public StubWindowsProvider(IReadOnlyCollection<WindowsTrustedRoot> certificates)
             => _certificates = certificates;
 
-        public IReadOnlyCollection<X509Certificate2> GetTrustedRoots() => _certificates;
+        public IReadOnlyCollection<WindowsTrustedRoot> GetTrustedRoots() => _certificates;
     }
 }

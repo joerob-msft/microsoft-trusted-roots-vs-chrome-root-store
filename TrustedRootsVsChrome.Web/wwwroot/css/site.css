@@ -115,6 +115,99 @@ main {
   font-weight: 600;
 }
 
+.filters-form {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filters-form .form-check {
+  margin-bottom: 0;
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.source-pill--current-user-trusted-root {
+  background-color: rgba(37, 99, 235, 0.16);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #1d4ed8;
+}
+
+.source-pill--current-user-third-party {
+  background-color: rgba(107, 33, 168, 0.16);
+  border-color: rgba(107, 33, 168, 0.35);
+  color: #6b21a8;
+}
+
+.source-pill--local-machine-trusted-root {
+  background-color: rgba(14, 116, 144, 0.16);
+  border-color: rgba(14, 116, 144, 0.35);
+  color: #0f766e;
+}
+
+.source-pill--local-machine-third-party {
+  background-color: rgba(180, 83, 9, 0.18);
+  border-color: rgba(180, 83, 9, 0.35);
+  color: #b45309;
+}
+
+.source-pill--local-machine-group-policy {
+  background-color: rgba(21, 128, 61, 0.16);
+  border-color: rgba(21, 128, 61, 0.35);
+  color: #15803d;
+}
+
+.source-pill--local-machine-enterprise {
+  background-color: rgba(180, 51, 77, 0.16);
+  border-color: rgba(180, 51, 77, 0.35);
+  color: #b4334d;
+}
+
+.source-pill--other {
+  background-color: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+
+.validity-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.validity-label {
+  display: inline-block;
+  min-width: 2.5rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.35rem;
+}
+
 .status-card {
   border-radius: 16px;
   padding: 1.75rem;

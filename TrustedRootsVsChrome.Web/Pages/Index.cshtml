@@ -7,13 +7,21 @@
 <section class="hero-panel">
     <div class="hero-content">
         <h1>Compare trust anchors in seconds</h1>
-        <p class="lead">This dashboard highlights certificates that exist on the Azure App Service worker&rsquo;s trusted root store but are missing from Chrome&rsquo;s Root Store. Microsoft issued roots are automatically excluded.</p>
+        <p class="lead">This dashboard highlights certificates that exist on the Azure App Service worker&rsquo;s trusted root store but are missing from Chrome&rsquo;s Root Store. Use the filter below to include Microsoft-issued anchors (including ameRoot) when needed.</p>
         <div class="meta">
             <span class="meta-label">Last refreshed</span>
             <span class="meta-value">@Model.ComparisonResult?.RetrievedAtUtc.ToLocalTime().ToString("f")</span>
         </div>
     </div>
 </section>
+
+<form method="get" class="filters-form">
+    <div class="form-check form-switch">
+        <input class="form-check-input" asp-for="ExcludeMicrosoftRoots" />
+        <label class="form-check-label" asp-for="ExcludeMicrosoftRoots">Exclude Microsoft-issued roots (includes ameRoot)</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Apply filters</button>
+</form>
 
 @if (Model.ComparisonResult is { ErrorMessage: not null } resultWithError)
 {
@@ -25,7 +33,17 @@ else if (Model.ComparisonResult is { MissingInChrome.Count: 0 })
 {
     <section class="status-card success">
         <h2>No gaps detected</h2>
-        <p>Every certificate in the worker&rsquo;s trusted root store is represented in Chrome&rsquo;s Root Store (aside from Microsoft-issued roots which are intentionally ignored).</p>
+        <p>
+            Every certificate in the worker&rsquo;s trusted root store is represented in Chrome&rsquo;s Root Store
+            @if (Model.ComparisonResult?.ExcludingMicrosoftRoots == true)
+            {
+                <text>(aside from Microsoft-issued roots which are intentionally ignored).</text>
+            }
+            else
+            {
+                <text>based on the current filter settings.</text>
+            }
+        </p>
     </section>
 }
 else if (Model.ComparisonResult is { MissingInChrome: var missing })
@@ -36,7 +54,7 @@ else if (Model.ComparisonResult is { MissingInChrome: var missing })
     </section>
 
     <section class="table-wrapper" aria-labelledby="difference-heading">
-        <h2 id="difference-heading">Certificates missing from Chrome Root Store</h2>
+        <h2 id="difference-heading">Trusted certificates on Azure Web Apps that are not in Chrome Root Store (valid for client auth)</h2>
 
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">
@@ -45,6 +63,7 @@ else if (Model.ComparisonResult is { MissingInChrome: var missing })
                         <th scope="col">Subject</th>
                         <th scope="col">Issuer</th>
                         <th scope="col">Thumbprint</th>
+                        <th scope="col">Source</th>
                         <th scope="col">Validity (UTC)</th>
                         <th scope="col">Version</th>
                     </tr>
@@ -63,7 +82,25 @@ else if (Model.ComparisonResult is { MissingInChrome: var missing })
                         <td>@record.Issuer</td>
                         <td class="thumbprint">@record.Thumbprint</td>
                         <td>
-                            <div>@record.NotBeforeUtc:yyyy-MM-dd &rarr; @record.NotAfterUtc:yyyy-MM-dd</div>
+                            @if (record.Sources.Count > 0)
+                            {
+                                <ul class="source-list">
+                                    @foreach (var source in record.Sources)
+                                    {
+                                        <li><span class="source-pill @IndexModel.GetSourceCssClass(source)">@source</span></li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Unknown</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="validity-range">
+                                <div><span class="validity-label">From</span> @record.NotBeforeUtc.ToString("yyyy-MM-dd")</div>
+                                <div><span class="validity-label">To</span> @record.NotAfterUtc.ToString("yyyy-MM-dd")</div>
+                            </div>
                         </td>
                         <td>@record.Version</td>
                     </tr>

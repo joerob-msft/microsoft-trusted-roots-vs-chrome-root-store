@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace TrustedRootsVsChrome.Web.Models;
 
@@ -9,4 +10,5 @@ public sealed record CertificateRecord(
     DateTime NotBeforeUtc,
     DateTime NotAfterUtc,
     int Version,
+    IReadOnlyCollection<string> Sources,
     string? FriendlyName = null);

@@ -25,7 +25,7 @@ public sealed class CertificateComparisonService
         _logger = logger;
     }
 
-    public async Task<CertificateComparisonResult> GetDifferencesAsync(CancellationToken cancellationToken)
+    public async Task<CertificateComparisonResult> GetDifferencesAsync(bool excludeMicrosoftTrustAnchors, CancellationToken cancellationToken)
     {
         try
         {
@@ -35,8 +35,8 @@ public sealed class CertificateComparisonService
             var chromeThumbprints = new HashSet<string>(chromeRoots.Select(c => c.Thumbprint), StringComparer.OrdinalIgnoreCase);
 
             var missing = windowsRoots
-                .Where(cert => !IsMicrosoftTrustAnchor(cert))
-                .Where(cert => !chromeThumbprints.Contains(cert.Thumbprint))
+                .Where(root => !excludeMicrosoftTrustAnchors || !IsMicrosoftTrustAnchor(root.Certificate))
+                .Where(root => !chromeThumbprints.Contains(root.Certificate.Thumbprint))
                 .Select(ToRecord)
                 .OrderBy(record => record.Subject, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -44,7 +44,8 @@ public sealed class CertificateComparisonService
             return new CertificateComparisonResult
             {
                 MissingInChrome = missing,
-                RetrievedAtUtc = DateTime.UtcNow
+                RetrievedAtUtc = DateTime.UtcNow,
+                ExcludingMicrosoftRoots = excludeMicrosoftTrustAnchors
             };
         }
         catch (Exception ex)
@@ -54,26 +55,44 @@ public sealed class CertificateComparisonService
             {
                 MissingInChrome = Array.Empty<CertificateRecord>(),
                 RetrievedAtUtc = DateTime.UtcNow,
-                ErrorMessage = "Unable to compare certificate stores. Please retry later or check application logs."
+                ErrorMessage = "Unable to compare certificate stores. Please retry later or check application logs.",
+                ExcludingMicrosoftRoots = excludeMicrosoftTrustAnchors
             };
         }
     }
 
     private static bool IsMicrosoftTrustAnchor(X509Certificate2 certificate)
     {
-        static bool ContainsMicrosoft(string? value) =>
-            !string.IsNullOrEmpty(value) && value.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
+        static bool HasMicrosoftMarker(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
 
-        return ContainsMicrosoft(certificate.Subject) || ContainsMicrosoft(certificate.Issuer);
+            return value.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("ameroot", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("ame root", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("ame-root", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return HasMicrosoftMarker(certificate.Subject)
+            || HasMicrosoftMarker(certificate.Issuer)
+            || HasMicrosoftMarker(certificate.FriendlyName);
     }
 
-    private static CertificateRecord ToRecord(X509Certificate2 certificate)
-        => new(
+    private static CertificateRecord ToRecord(WindowsTrustedRoot root)
+    {
+        var certificate = root.Certificate;
+
+        return new CertificateRecord(
             certificate.Subject,
             certificate.Issuer,
             certificate.Thumbprint,
             certificate.NotBefore.ToUniversalTime(),
             certificate.NotAfter.ToUniversalTime(),
             certificate.Version,
+            root.Sources,
             string.IsNullOrWhiteSpace(certificate.FriendlyName) ? null : certificate.FriendlyName);
+    }
 }
