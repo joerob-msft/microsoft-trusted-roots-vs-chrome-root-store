@@ -1,0 +1,75 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Chrome vs. Windows Root Store";
+}
+
+<section class="hero-panel">
+    <div class="hero-content">
+        <h1>Compare trust anchors in seconds</h1>
+        <p class="lead">This dashboard highlights certificates that exist on the Azure App Service worker&rsquo;s trusted root store but are missing from Chrome&rsquo;s Root Store. Microsoft issued roots are automatically excluded.</p>
+        <div class="meta">
+            <span class="meta-label">Last refreshed</span>
+            <span class="meta-value">@Model.ComparisonResult?.RetrievedAtUtc.ToLocalTime().ToString("f")</span>
+        </div>
+    </div>
+</section>
+
+@if (Model.ComparisonResult is { ErrorMessage: not null } resultWithError)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Comparison failed.</strong> @resultWithError.ErrorMessage
+    </div>
+}
+else if (Model.ComparisonResult is { MissingInChrome.Count: 0 })
+{
+    <section class="status-card success">
+        <h2>No gaps detected</h2>
+        <p>Every certificate in the worker&rsquo;s trusted root store is represented in Chrome&rsquo;s Root Store (aside from Microsoft-issued roots which are intentionally ignored).</p>
+    </section>
+}
+else if (Model.ComparisonResult is { MissingInChrome: var missing })
+{
+    <section class="status-card warning">
+        <h2>@missing.Count certificates are unique to Windows</h2>
+        <p>Review the list below to determine whether any action is required for Azure App Service workloads that rely on Chrome compatibility.</p>
+    </section>
+
+    <section class="table-wrapper" aria-labelledby="difference-heading">
+        <h2 id="difference-heading">Certificates missing from Chrome Root Store</h2>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Issuer</th>
+                        <th scope="col">Thumbprint</th>
+                        <th scope="col">Validity (UTC)</th>
+                        <th scope="col">Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var record in missing)
+                {
+                    <tr>
+                        <td>
+                            <div class="cell-primary">@record.Subject</div>
+                            @if (!string.IsNullOrWhiteSpace(record.FriendlyName))
+                            {
+                                <div class="cell-secondary">@record.FriendlyName</div>
+                            }
+                        </td>
+                        <td>@record.Issuer</td>
+                        <td class="thumbprint">@record.Thumbprint</td>
+                        <td>
+                            <div>@record.NotBeforeUtc:yyyy-MM-dd &rarr; @record.NotAfterUtc:yyyy-MM-dd</div>
+                        </td>
+                        <td>@record.Version</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

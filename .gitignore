@@ -1,0 +1,39 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.appx
+*.appxbundle
+*.cache
+*.stackdump
+*.pidb
+*.svclog
+*.scc
+
+# Test and coverage artifacts
+TestResults/
+[Tt]est[Rr]esult*
+*.coverage
+*.coveragexml
+*.trx
+*.nupkg
+*.snupkg
+
+# User-specific files
+*.user
+*.vspscc
+*.suo
+*.userprefs
+
+# Visual Studio
+.vs/
+# Logs
+*.log
+
+# Azure
+appsettings.*.json
