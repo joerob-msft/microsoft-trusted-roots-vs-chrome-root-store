@@ -10,6 +10,11 @@ builder.Services.AddHttpClient<IChromeRootStoreProvider, ChromeRootStoreProvider
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("TrustedRootsVsChrome/1.0");
 });
+builder.Services.AddHttpClient<IMicrosoftTrustedRootProgramProvider, MicrosoftTrustedRootProgramProvider>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("TrustedRootsVsChrome/1.0");
+});
 builder.Services.AddSingleton<IWindowsTrustedRootProvider, WindowsTrustedRootProvider>();
 builder.Services.AddSingleton<CertificateComparisonService>();
 

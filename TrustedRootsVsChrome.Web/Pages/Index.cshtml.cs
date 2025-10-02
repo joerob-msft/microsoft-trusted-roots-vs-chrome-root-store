@@ -18,7 +18,8 @@ public class IndexModel : PageModel
         ["Local Machine / Trusted Root"] = "source-pill--local-machine-trusted-root",
         ["Local Machine / Third-Party Root"] = "source-pill--local-machine-third-party",
         ["Local Machine / Group Policy Root"] = "source-pill--local-machine-group-policy",
-        ["Local Machine / Enterprise Root"] = "source-pill--local-machine-enterprise"
+        ["Local Machine / Enterprise Root"] = "source-pill--local-machine-enterprise",
+        ["Microsoft Trusted Root Program"] = "source-pill--trusted-program"
     };
 
     public CertificateComparisonResult? ComparisonResult { get; private set; }

@@ -1,11 +1,12 @@
 # Trusted Roots vs Chrome Root Store
 
-A .NET 8 Razor Pages web application that highlights differences between the trusted root certificates installed on an Azure App Service (Windows) worker and the certificates included in Chrome's Root Store.
+A .NET 8 Razor Pages web application that highlights differences between the Microsoft Trusted Root Program and the certificates included in Chrome's Root Store.
 
 ## Features
 
 - Downloads the latest Chrome Root Store certificate bundle directly from the Chromium source repository.
-- Reads the current worker's Windows trusted root store (both `CurrentUser` and `LocalMachine`).
+- Retrieves the official Microsoft Trusted Root Program list (`authroots.sst`) published by Windows Update.
+- Enriches the program data with any copies currently present in the worker's Windows trusted root stores.
 - Excludes Microsoft-issued root certificates from the comparison.
 - Presents missing certificates in a responsive, data-rich dashboard styled for modern browsers.
 
@@ -34,14 +35,16 @@ Navigate to `https://localhost:5001` (or the HTTPS URL shown in the console). Th
 ### Deployment Notes
 
 - Target Azure App Service on Windows for parity with the certificate store logic.
-- Managed identity is not required for certificate access; the app relies on the worker's local stores.
+- Managed identity is not required for certificate access; the app relies on publicly available certificate feeds and the worker's local stores for enrichment only.
 - Ensure outbound internet access is allowed so the app can download the Chrome Root Store file from `chromium.googlesource.com`.
+- Allow outbound internet access to `chromium.googlesource.com` and `ctldl.windowsupdate.com` so both certificate feeds can be refreshed.
 
 ## Project Structure
 
 - `TrustedRootsVsChrome.Web/` — Razor Pages application with services and models
   - `Services/ChromeRootStoreProvider` — downloads and parses the Chrome root store bundle
-  - `Services/WindowsTrustedRootProvider` — loads certificates from Windows trusted stores
+  - `Services/MicrosoftTrustedRootProgramProvider` — downloads and parses the Microsoft Trusted Root Program list
+  - `Services/WindowsTrustedRootProvider` — loads certificates from Windows trusted stores for optional enrichment
   - `Services/CertificateComparisonService` — orchestrates the comparison and filtering logic
   - `Pages/Index` — dashboard UI for the comparison results
 - `TrustedRootsVsChrome.Tests/` — xUnit tests covering comparison edge cases

@@ -11,16 +11,21 @@ namespace TrustedRootsVsChrome.Web.Services;
 
 public sealed class CertificateComparisonService
 {
+    private static readonly IReadOnlyCollection<string> DefaultProgramSource = new[] { "Microsoft Trusted Root Program" };
+
     private readonly IChromeRootStoreProvider _chromeRootStoreProvider;
+    private readonly IMicrosoftTrustedRootProgramProvider _microsoftTrustedRootProgramProvider;
     private readonly IWindowsTrustedRootProvider _windowsTrustedRootProvider;
     private readonly ILogger<CertificateComparisonService> _logger;
 
     public CertificateComparisonService(
-    IChromeRootStoreProvider chromeRootStoreProvider,
-    IWindowsTrustedRootProvider windowsTrustedRootProvider,
+        IChromeRootStoreProvider chromeRootStoreProvider,
+        IMicrosoftTrustedRootProgramProvider microsoftTrustedRootProgramProvider,
+        IWindowsTrustedRootProvider windowsTrustedRootProvider,
         ILogger<CertificateComparisonService> logger)
     {
         _chromeRootStoreProvider = chromeRootStoreProvider;
+        _microsoftTrustedRootProgramProvider = microsoftTrustedRootProgramProvider;
         _windowsTrustedRootProvider = windowsTrustedRootProvider;
         _logger = logger;
     }
@@ -30,14 +35,22 @@ public sealed class CertificateComparisonService
         try
         {
             var chromeRoots = await _chromeRootStoreProvider.GetCertificatesAsync(cancellationToken);
+            var microsoftProgramRoots = await _microsoftTrustedRootProgramProvider.GetCertificatesAsync(cancellationToken);
             var windowsRoots = _windowsTrustedRootProvider.GetTrustedRoots();
+
+            var windowsByThumbprint = windowsRoots.ToDictionary(root => root.Certificate.Thumbprint, root => root, StringComparer.OrdinalIgnoreCase);
 
             var chromeThumbprints = new HashSet<string>(chromeRoots.Select(c => c.Thumbprint), StringComparer.OrdinalIgnoreCase);
 
-            var missing = windowsRoots
-                .Where(root => !excludeMicrosoftTrustAnchors || !IsMicrosoftTrustAnchor(root.Certificate))
-                .Where(root => !chromeThumbprints.Contains(root.Certificate.Thumbprint))
-                .Select(ToRecord)
+            var missing = microsoftProgramRoots
+                .Where(cert => !excludeMicrosoftTrustAnchors || !IsMicrosoftTrustAnchor(cert))
+                .Where(cert => !chromeThumbprints.Contains(cert.Thumbprint))
+                .Select(cert =>
+                {
+                    windowsByThumbprint.TryGetValue(cert.Thumbprint, out var windowsRoot);
+                    var sources = BuildSources(windowsRoot);
+                    return ToRecord(cert, sources);
+                })
                 .OrderBy(record => record.Subject, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -81,10 +94,21 @@ public sealed class CertificateComparisonService
             || HasMicrosoftMarker(certificate.FriendlyName);
     }
 
-    private static CertificateRecord ToRecord(WindowsTrustedRoot root)
+    private static IReadOnlyCollection<string> BuildSources(WindowsTrustedRoot? windowsRoot)
     {
-        var certificate = root.Certificate;
+        if (windowsRoot is null || windowsRoot.Sources.Count == 0)
+        {
+            return DefaultProgramSource;
+        }
 
+        return windowsRoot.Sources
+            .Concat(DefaultProgramSource)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static CertificateRecord ToRecord(X509Certificate2 certificate, IReadOnlyCollection<string> sources)
+    {
         return new CertificateRecord(
             certificate.Subject,
             certificate.Issuer,
@@ -92,7 +116,7 @@ public sealed class CertificateComparisonService
             certificate.NotBefore.ToUniversalTime(),
             certificate.NotAfter.ToUniversalTime(),
             certificate.Version,
-            root.Sources,
+            sources,
             string.IsNullOrWhiteSpace(certificate.FriendlyName) ? null : certificate.FriendlyName);
     }
 }
