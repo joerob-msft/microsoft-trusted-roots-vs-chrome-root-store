@@ -10,6 +10,4 @@ public sealed class CertificateComparisonResult
     public DateTime RetrievedAtUtc { get; init; }
 
     public string? ErrorMessage { get; init; }
-
-    public bool ExcludingMicrosoftRoots { get; init; }
 }

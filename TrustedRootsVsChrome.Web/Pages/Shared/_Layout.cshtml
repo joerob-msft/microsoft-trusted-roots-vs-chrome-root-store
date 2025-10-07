@@ -8,14 +8,19 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TrustedRootsVsChrome.Web.styles.css" asp-append-version="true" />
 </head>
+@{
+    var currentPath = Context.Request.Path.Value ?? string.Empty;
+}
 <body>
     <header class="app-header">
         <div class="container">
             <nav class="app-nav" aria-label="Main navigation">
                 <a class="brand" asp-area="" asp-page="/Index">Trusted Roots vs Chrome</a>
                 <div class="nav-links">
-                    <a asp-area="" asp-page="/Index" class="@(Context.Request.Path == "/" ? "active" : null)">Dashboard</a>
-                    <a asp-area="" asp-page="/Privacy">Privacy</a>
+                    <a asp-area="" asp-page="/Index" class="@((string.Equals(currentPath, "/", System.StringComparison.OrdinalIgnoreCase) || string.Equals(currentPath, "/Index", System.StringComparison.OrdinalIgnoreCase)) ? "active" : null)">Dashboard</a>
+                    <a asp-area="" asp-page="/ProgramCertificates" class="@((string.Equals(currentPath, "/ProgramCertificates", System.StringComparison.OrdinalIgnoreCase)) ? "active" : null)">Microsoft catalog</a>
+                    <a asp-area="" asp-page="/ChromeCertificates" class="@((string.Equals(currentPath, "/ChromeCertificates", System.StringComparison.OrdinalIgnoreCase)) ? "active" : null)">Chrome catalog</a>
+                    <a asp-area="" asp-page="/Privacy" class="@(string.Equals(currentPath, "/Privacy", System.StringComparison.OrdinalIgnoreCase) ? "active" : null)">Privacy</a>
                 </div>
             </nav>
         </div>

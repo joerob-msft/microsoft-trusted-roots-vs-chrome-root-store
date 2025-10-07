@@ -115,6 +115,75 @@ main {
   font-weight: 600;
 }
 
+.hero-panel .refresh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero-panel .refresh-status .status-indicator {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.65);
+  position: relative;
+}
+
+.hero-panel .refresh-status.refreshing .status-indicator::after {
+  content: "";
+  position: absolute;
+  inset: -0.3rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  opacity: 0.8;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.hero-panel .refresh-status.ok .status-indicator {
+  background-color: rgba(56, 189, 248, 0.8);
+}
+
+.hero-panel .refresh-status.errored .status-indicator {
+  background-color: rgba(248, 113, 113, 0.9);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.page-intro {
+  margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.page-intro h1 {
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.page-intro .lead {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: #334155;
+  margin-bottom: 0.75rem;
+}
+
+.page-intro .meta-line {
+  font-size: 0.95rem;
+  color: #475569;
+}
+
 .filters-form {
   display: flex;
   align-items: center;
@@ -125,6 +194,37 @@ main {
 
 .filters-form .form-check {
   margin-bottom: 0;
+}
+
+.callouts {
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.callout {
+  background: linear-gradient(125deg, #0f172a 0%, #1d4ed8 55%, #1e40af 100%);
+  border-radius: 20px;
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  color: rgba(255, 255, 255, 0.92);
+  display: grid;
+  gap: 1rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+}
+
+.callout h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0;
+}
+
+.callout p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .source-list {
@@ -191,6 +291,12 @@ main {
   color: #1d4ed8;
 }
 
+.source-pill--chrome-root {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #c2410c;
+}
+
 .source-pill--other {
   background-color: rgba(15, 23, 42, 0.08);
   border-color: rgba(15, 23, 42, 0.15);
@@ -222,6 +328,10 @@ main {
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
+.status-card.info {
+  border-left: 6px solid #2563eb;
+}
+
 .status-card h2 {
   font-size: 1.5rem;
   margin-bottom: 0.75rem;
@@ -240,6 +350,18 @@ main {
   border-left: 6px solid #fbbc05;
 }
 
+.status-grid {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+}
+
+@media (min-width: 768px) {
+  .status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .table-wrapper {
   background-color: #ffffff;
   border-radius: 18px;
@@ -250,6 +372,12 @@ main {
 .table-wrapper h2 {
   font-size: 1.5rem;
   margin-bottom: 1.25rem;
+}
+
+.table-note {
+  font-size: 0.95rem;
+  color: #475569;
+  margin-bottom: 1rem;
 }
 
 .table-responsive {
@@ -269,6 +397,10 @@ main {
   vertical-align: middle;
 }
 
+.row-exclusive {
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
 .cell-primary {
   font-weight: 600;
   color: #111827;
@@ -283,6 +415,30 @@ main {
 .thumbprint {
   font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", ui-monospace, monospace;
   font-size: 0.85rem;
+}
+
+.presence-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+  background-color: rgba(15, 23, 42, 0.08);
+}
+
+.presence-indicator--yes {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #047857;
+}
+
+.presence-indicator--no {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: #b91c1c;
 }
 
 .alert {

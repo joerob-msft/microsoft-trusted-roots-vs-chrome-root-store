@@ -4,19 +4,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICertificateCacheStore, FileCertificateCacheStore>();
+builder.Services.AddSingleton<CertificateRefreshStatusTracker>();
+builder.Services.AddSingleton<ICertificateRefreshStatusProvider>(sp => sp.GetRequiredService<CertificateRefreshStatusTracker>());
+builder.Services.AddSingleton<ICertificateRefreshStatusUpdater>(sp => sp.GetRequiredService<CertificateRefreshStatusTracker>());
 
 builder.Services.AddHttpClient<IChromeRootStoreProvider, ChromeRootStoreProvider>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("TrustedRootsVsChrome/1.0");
 });
-builder.Services.AddHttpClient<IMicrosoftTrustedRootProgramProvider, MicrosoftTrustedRootProgramProvider>(client =>
+builder.Services.AddHttpClient<MicrosoftTrustedRootProgramProvider>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromMinutes(5);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("TrustedRootsVsChrome/1.0");
 });
-builder.Services.AddSingleton<IWindowsTrustedRootProvider, WindowsTrustedRootProvider>();
+builder.Services.AddSingleton<IMicrosoftTrustedRootProgramProvider>(sp => sp.GetRequiredService<MicrosoftTrustedRootProgramProvider>());
+builder.Services.AddSingleton<IMicrosoftTrustedRootProgramRefreshService>(sp => sp.GetRequiredService<MicrosoftTrustedRootProgramProvider>());
 builder.Services.AddSingleton<CertificateComparisonService>();
+builder.Services.AddHostedService<CertificateSynchronizationBackgroundService>();
 
 var app = builder.Build();
 

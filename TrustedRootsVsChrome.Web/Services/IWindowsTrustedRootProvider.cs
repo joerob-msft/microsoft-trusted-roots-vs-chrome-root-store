@@ -1,8 +1,1 @@
-using System.Collections.Generic;
-
-namespace TrustedRootsVsChrome.Web.Services;
-
-public interface IWindowsTrustedRootProvider
-{
-    IReadOnlyCollection<WindowsTrustedRoot> GetTrustedRoots();
-}
+// File intentionally left blank after removing Windows trusted store support.

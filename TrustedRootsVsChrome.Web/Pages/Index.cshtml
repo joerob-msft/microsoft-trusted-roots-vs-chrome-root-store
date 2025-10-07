@@ -7,21 +7,64 @@
 <section class="hero-panel">
     <div class="hero-content">
     <h1>Compare trust anchors in seconds</h1>
-    <p class="lead">This dashboard highlights certificates that are approved by the Microsoft Trusted Root Program but absent from Chrome&rsquo;s Root Store. Use the filter below to include Microsoft-issued anchors (including ameRoot) when needed.</p>
+        <p class="lead">This dashboard highlights certificates that are approved by the Microsoft Trusted Root Program but absent from Chrome&rsquo;s Root Store.</p>
         <div class="meta">
             <span class="meta-label">Last refreshed</span>
             <span class="meta-value">@Model.ComparisonResult?.RetrievedAtUtc.ToLocalTime().ToString("f")</span>
         </div>
+        <div class="meta">
+            <span class="meta-label">Microsoft catalog</span>
+            <span class="meta-value">
+                @if (Model.RefreshStatus.IsRefreshing)
+                {
+                    <span class="refresh-status refreshing">
+                        <span class="status-indicator" aria-hidden="true"></span>
+                        <span>Refreshing… @Model.RefreshStatus.ProcessedCertificates of @Model.RefreshStatus.TotalCertificates processed (@Model.RefreshStatus.ProgressPercentage%)</span>
+                    </span>
+                }
+                else if (!string.IsNullOrWhiteSpace(Model.RefreshStatus.ErrorMessage))
+                {
+                    <span class="refresh-status errored">
+                        <span class="status-indicator" aria-hidden="true"></span>
+                        <span>Last refresh failed: @Model.RefreshStatus.ErrorMessage</span>
+                    </span>
+                }
+                else if (Model.RefreshStatus.LastSuccessUtc is { } lastSuccess)
+                {
+                    <span class="refresh-status ok">
+                        <span class="status-indicator" aria-hidden="true"></span>
+                        <span>Last refresh succeeded @lastSuccess.ToLocalTime().ToString("f")</span>
+                    </span>
+                }
+                else if (Model.RefreshStatus.LastAttemptUtc is { } lastAttempt)
+                {
+                    <span class="refresh-status" title="No successful refresh yet">
+                        <span class="status-indicator" aria-hidden="true"></span>
+                        <span>Refresh attempted @lastAttempt.ToLocalTime().ToString("f")</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="refresh-status" title="No refresh activity has been recorded yet">
+                        <span class="status-indicator" aria-hidden="true"></span>
+                        <span>Refresh status unavailable</span>
+                    </span>
+                }
+            </span>
+        </div>
     </div>
 </section>
 
-<form method="get" class="filters-form">
-    <div class="form-check form-switch">
-        <input class="form-check-input" asp-for="ExcludeMicrosoftRoots" />
-    <label class="form-check-label" asp-for="ExcludeMicrosoftRoots">Exclude Microsoft-issued roots (includes ameRoot)</label>
+<section class="callouts">
+    <div class="callout">
+        <h2>Need the full listings?</h2>
+        <p>Browse the complete certificate inventories to see everything in each program.</p>
+        <div class="callout-actions">
+            <a class="btn btn-outline-light" asp-page="/ProgramCertificates">Microsoft Trusted Root Program</a>
+            <a class="btn btn-outline-light" asp-page="/ChromeCertificates">Chrome Root Store</a>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Apply filters</button>
-</form>
+</section>
 
 @if (Model.ComparisonResult is { ErrorMessage: not null } resultWithError)
 {
@@ -29,28 +72,25 @@
         <strong>Comparison failed.</strong> @resultWithError.ErrorMessage
     </div>
 }
+else if (Model.RefreshStatus.IsRefreshing || Model.RefreshStatus.LastSuccessUtc is null)
+{
+    <section class="status-card info">
+        <h2>Catalog refresh in progress</h2>
+        <p>The Microsoft Trusted Root Program catalog is loading in the background. This page will populate once the latest certificates are available.</p>
+    </section>
+}
 else if (Model.ComparisonResult is { MissingInChrome.Count: 0 })
 {
     <section class="status-card success">
         <h2>No gaps detected</h2>
-        <p>
-            Every certificate in the Microsoft Trusted Root Program is represented in Chrome&rsquo;s Root Store
-            @if (Model.ComparisonResult?.ExcludingMicrosoftRoots == true)
-            {
-                <text>(aside from Microsoft-issued roots which are intentionally ignored).</text>
-            }
-            else
-            {
-                <text>based on the current filter settings.</text>
-            }
-        </p>
+        <p>Every certificate in the Microsoft Trusted Root Program is currently represented in Chrome&rsquo;s Root Store.</p>
     </section>
 }
 else if (Model.ComparisonResult is { MissingInChrome: var missing })
 {
     <section class="status-card warning">
-    <h2>@missing.Count certificates are unique to the Microsoft program</h2>
-    <p>Review the list below to determine whether any action is required for workloads that rely on Chrome compatibility.</p>
+        <h2>@missing.Count certificates are unique to the Microsoft program</h2>
+        <p>Review the list below to determine whether any action is required for workloads that rely on Chrome compatibility.</p>
     </section>
 
     <section class="table-wrapper" aria-labelledby="difference-heading">
@@ -87,7 +127,7 @@ else if (Model.ComparisonResult is { MissingInChrome: var missing })
                                 <ul class="source-list">
                                     @foreach (var source in record.Sources)
                                     {
-                                        <li><span class="source-pill @IndexModel.GetSourceCssClass(source)">@source</span></li>
+                                        <li><span class="source-pill @SourceCssClassProvider.GetSourceCssClass(source)">@source</span></li>
                                     }
                                 </ul>
                             }

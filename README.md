@@ -5,9 +5,8 @@ A .NET 8 Razor Pages web application that highlights differences between the Mic
 ## Features
 
 - Downloads the latest Chrome Root Store certificate bundle directly from the Chromium source repository.
-- Retrieves the official Microsoft Trusted Root Program list (`authroots.sst`) published by Windows Update.
+- Retrieves the official Microsoft Trusted Root Program trust list by downloading `authroot.stl` via the `https://aka.ms/CTLDownload` alias and parsing its certificate entries.
 - Enriches the program data with any copies currently present in the worker's Windows trusted root stores.
-- Excludes Microsoft-issued root certificates from the comparison.
 - Presents missing certificates in a responsive, data-rich dashboard styled for modern browsers.
 
 ## Getting Started
@@ -52,4 +51,4 @@ Navigate to `https://localhost:5001` (or the HTTPS URL shown in the console). Th
 ## Known Limitations
 
 - The Chrome root store is cached in-memory for 12 hours to limit network usage; restart the app to force an immediate refresh.
-- Microsoft-issued certificates are excluded via a simple subject/issuer string match (`"Microsoft"`). Update the logic if more granular filtering is required.
+- Certificate feeds are cached in-memory for 12 hours; restart the app or wait for cache expiration to pick up newly published certificates immediately.

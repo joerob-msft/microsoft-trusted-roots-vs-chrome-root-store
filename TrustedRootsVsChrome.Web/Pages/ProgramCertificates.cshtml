@@ -1,0 +1,89 @@
+@page
+@model ProgramCertificatesModel
+@{
+    ViewData["Title"] = "Microsoft Trusted Root Program Certificates";
+    var total = Model.Certificates.Count;
+    var overlap = Model.ChromeOverlapCount;
+    var unique = total - overlap;
+}
+
+<section class="page-intro">
+    <h1>Microsoft Trusted Root Program</h1>
+    <p class="lead">This catalog is hydrated from the <code>authroots.sst</code> trust list, downloaded via the official <code>https://aka.ms/CTLDownload</code> alias. The payload is cached locally for 12 hours after download.</p>
+    <p class="meta-line">Retrieved @Model.RetrievedAtUtc.ToLocalTime():f</p>
+</section>
+
+<section class="status-grid">
+    <article class="status-card info">
+        <h2>Total certificates</h2>
+        <p class="status-value">@total</p>
+        <p class="status-caption">Entries in the Microsoft Trusted Root Program feed.</p>
+    </article>
+    <article class="status-card success">
+        <h2>Also in Chrome</h2>
+        <p class="status-value">@overlap</p>
+        <p class="status-caption">Microsoft certificates that Chrome also trusts.</p>
+    </article>
+    <article class="status-card warning">
+        <h2>Program-only</h2>
+        <p class="status-value">@unique</p>
+        <p class="status-caption">Certificates missing from Chrome&rsquo;s Root Store.</p>
+    </article>
+</section>
+
+<section class="table-wrapper" aria-labelledby="program-table-heading">
+    <h2 id="program-table-heading">Program certificates with Chrome overlap indicator</h2>
+
+    <p class="table-note">Presence in Chrome is determined by matching SHA-1 thumbprints from <code>root_store.certs</code> pulled from <strong>chromium.googlesource.com</strong>.</p>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Issuer</th>
+                    <th scope="col">Thumbprint</th>
+                    <th scope="col">Sources</th>
+                    <th scope="col">Validity (UTC)</th>
+                    <th scope="col">Also in Chrome?</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var entry in Model.Certificates)
+            {
+                var certificate = entry.Certificate;
+                <tr class="@(entry.PresentInOtherStore ? string.Empty : "row-exclusive")">
+                    <td>
+                        <div class="cell-primary">@certificate.Subject</div>
+                        @if (!string.IsNullOrWhiteSpace(certificate.FriendlyName))
+                        {
+                            <div class="cell-secondary">@certificate.FriendlyName</div>
+                        }
+                    </td>
+                    <td>@certificate.Issuer</td>
+                    <td class="thumbprint">@certificate.Thumbprint</td>
+                    <td>
+                        <ul class="source-list">
+                            @foreach (var source in certificate.Sources)
+                            {
+                                <li><span class="source-pill @SourceCssClassProvider.GetSourceCssClass(source)">@source</span></li>
+                            }
+                        </ul>
+                    </td>
+                    <td>
+                        <div class="validity-range">
+                            <div><span class="validity-label">From</span> @certificate.NotBeforeUtc:yyyy-MM-dd</div>
+                            <div><span class="validity-label">To</span> @certificate.NotAfterUtc:yyyy-MM-dd</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="presence-indicator @(entry.PresentInOtherStore ? "presence-indicator--yes" : "presence-indicator--no")">
+                            @(entry.PresentInOtherStore ? "Yes" : "No")
+                        </span>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
